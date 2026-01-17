@@ -100,6 +100,16 @@ test('Edit a Kanban Card - Complete a subtask and move to first column', async (
             const total = parseInt(match[2]);
 
             if (total > 0 && completed < total) {
+              // Verify this card is NOT in the first column
+              // Double-check even though loop starts from index 1
+              const columnName = await column.locator('h2').textContent().catch(() => '');
+              const columnNameClean = columnName.trim().split('(')[0].trim();
+              
+              // Skip if this is the first column (case-insensitive comparison)
+              if (columnNameClean.toLowerCase() === firstColumnNameClean.toLowerCase()) {
+                continue;
+              }
+              
               targetCard = card;
               targetCardTitle = await card.locator('h3').textContent();
               targetColumn = column;
@@ -173,9 +183,10 @@ test('Edit a Kanban Card - Complete a subtask and move to first column', async (
   expect(targetCardTitle).toBeTruthy();
   expect(initialCompletedCount).toBeLessThan(initialSubtaskCount);
 
+  // Double-check that card is not in first column (safety check)
   const initialColumnName = await targetColumn.locator('h2').textContent();
   const initialColumnNameClean = initialColumnName.trim().split('(')[0].trim();
-  expect(initialColumnNameClean).not.toBe(firstColumnNameClean);
+  expect(initialColumnNameClean.toLowerCase()).not.toBe(firstColumnNameClean.toLowerCase());
 
   // Open card and verify it has unchecked checkboxes in modal
   // If card shows all subtasks completed in modal, try next card
