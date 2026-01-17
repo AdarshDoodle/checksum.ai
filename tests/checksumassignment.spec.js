@@ -28,15 +28,31 @@ test('Edit a Kanban Card - Complete a subtask and move to first column', async (
   expect(columnCount).toBeGreaterThan(1);
   
   // Wait for cards to load
-  await page.waitForFunction(
-    () => {
-      const allCards = document.querySelectorAll('section[data-dragscroll] article.group');
-      return allCards.length > 0;
-    },
-    { timeout: 10000 }
-  ).catch(() => {}); // Continue even if no cards found initially
+  try {
+    await page.waitForFunction(
+      () => {
+        const allCards = document.querySelectorAll('section[data-dragscroll] article.group');
+        return allCards.length > 0;
+      },
+      { timeout: 10000 }
+    );
+  } catch (error) {
+    // Continue even if no cards found initially - cards might load later
+    // Check if page error indicates closure
+    if (error.message && error.message.includes('closed')) {
+      throw error;
+    }
+  }
   
-  await page.waitForTimeout(1000);
+  // Wait with error handling in case page closed
+  try {
+    await page.waitForTimeout(1000);
+  } catch (error) {
+    if (error.message && error.message.includes('closed')) {
+      throw new Error('Page was closed unexpectedly. This may indicate a browser crash or navigation issue.');
+    }
+    throw error;
+  }
 
   const firstColumn = columns.first();
   const firstColumnName = await firstColumn.locator('h2').textContent();
